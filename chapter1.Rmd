@@ -2,16 +2,16 @@
 # About the project
 
 *Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you can use R Markdown syntax.*
-I am feeling curious, **excited** and a bit *nervous* as well. I expect to learn about programming and data analysis in R langauage, so far I have been using spss. I want to also learn how to analyse big data and find patterns in data that could lead to new findings.
+I am feeling curious, **excited** and a bit *nervous* as well. I expect to learn about programming and data analysis in R langauage, so far I have been using spss. I want to also learn how to analyse big data and find patterns in data that could lead to new findings. I found the course through UEF WebOodi.
 
 # R markdown
-## Formatting text
+### Formatting text
 
-*I have written this portion where you can find
- +textwritten in different formats
- +clickable links
+* I have written this portion where you can find
+    + textwritten in `different` formats
+    + clickable links
 
-I found the course through UEF WebOodi.
+![image](C:\Users\sarangq\OneDrive - University of Eastern Finland\PhD\Courses\Introduction to Open Data Science 2019\R studio.jpg)
 
 Here is the link to my GitHUB repository
 https://github.com/saranglq/IODS-project
@@ -19,4 +19,5 @@ https://github.com/saranglq/IODS-project
 Here is the link to my diary page
 https://saranglq.github.io/IODS-project/
 
-Here is the link to my [diary page](https://saranglq.github.io/IODS-project/)
+Another link to my [diary page](https://saranglq.github.io/IODS-project/)
+
