@@ -6,9 +6,11 @@ I am feeling curious, **excited** and a bit *nervous* as well. I expect to learn
 # R markdown
 ### Formatting text
 
-* I have written this portion where you can find
-    + textwritten in `different` formats
-    + clickable links
+I have written this portion where you can find
+<ol> 
+<li>textwritten in `different` formats </li>
+<li> clickable links </li>
+</ol>
 
 ![image](C:\Users\sarangq\OneDrive - University of Eastern Finland\PhD\Courses\Introduction to Open Data Science 2019\R studio.jpg)
 
