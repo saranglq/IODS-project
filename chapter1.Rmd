@@ -1,7 +1,6 @@
 
 # About the project
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you can use R Markdown syntax.*
 I am feeling curious, **excited** and a bit *nervous* as well. I expect to learn about programming and data analysis in R langauage, so far I have been using spss. I want to also learn how to analyse big data and find patterns in data that could lead to new findings. I found the course through UEF WebOodi.
 
 # R markdown
