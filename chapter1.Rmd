@@ -3,8 +3,8 @@
 
 I am feeling curious, **excited** and a bit *nervous* as well. I expect to learn about programming and data analysis in R langauage, so far I have been using spss. I want to also learn how to analyse big data and find patterns in data that could lead to new findings. I found the course through UEF WebOodi.
 
-# R markdown
-### Formatting text
+## R markdown
+#### Formatting text
 
 I have written this portion where you can find
 <ol> 
