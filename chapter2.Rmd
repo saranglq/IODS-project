@@ -78,3 +78,4 @@ QQ-plot demostrates that the errors of the model are normally distributed, there
 The scatterplot of residuals vs the fitted values shows no pattern, i.e. the spread remains largely similar with the increase in fitted value. Howeverthere are some residuals that are far form the fitted line. These could potentially be  outliers
 
 The residuals vs leverage plot shows that none of the eobservations have an unusually high impact on the results.
+
