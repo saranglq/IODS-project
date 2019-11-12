@@ -2,6 +2,79 @@
 
 *Describe the work you have done this week and summarize your learning.*
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+[comment]: <> (Describe your work and results clearly.)
+[comment]: <> (Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.)
+[comment]: <> (Assume the reader has no previous knowledge of your data or the more advanced methods you are using.)
+
+I started this week with learning R through the Data Camp platform. I learned how to handle (wrangle) data in R. I learned how to modify existing datasets, merge different datasets, and carry out simple and multiple linear regressin analyses. I also learned how to make graphical representations of these analyses.
+
+###Dataset
+The dataset given to us was from the "International survey of Approaches to Learning" funded by the Teacher's Academy funding for Kimma Vehkalahti. Data was collected during 2013-2015
+
+Oridinal dataset had 183 observations for 60 variables. Variables with prefix A adn C were based on componenets of A and C parts of [ASSIST](http://www.etl.tla.ed.ac.uk/publications.html#measurement) (Approaches and Study Skills Inventory for Students). Prefix D variables were based on [SATS](http://www.evaluationandstatistics.com/) (Survey of Attitudes Toward Statistics). Items from the ASSIST B part were named so that their connection to the relevant dimension (Deep/Surface/Strategic) was maintained 
+
+###Data wrangling
+
+The had multiple variables and I was supposed to merge assist B components into three major variables (Deep, Surface, Strategy). I also renamed three other variables (Age Attitude, Points -> age, attitude, points). Then I had to exclude other variables after selecting only 7 variables. The resulting dataset I saved as lrn2014.csv which has **7 variables** and **166 observations** for each variable.
+
+###Data distribution
+Gender distribution was uneven, there were 110 female and 56 male subjects.
+
+**Distributions of each variable (except gender) are given below:**
+
+<img src="data\Imagese2\histage.png" alt="drawing" width="200"/>
+<img src="data\Imagese2\histattitude.png" alt="drawing" width="200"/>
+<img src="data\Imagese2\histdeep.png" alt="drawing" width="200"/>
+<img src="data\Imagese2\histpoints.png" alt="drawing" width="200"/>
+<img src="data\Imagese2\histstra.png" alt="drawing" width="200"/>
+<img src="data\Imagese2\histsurf.png" alt="drawing" width="200"/>
+
+**Following is a summary table for all variables:**
+ 
+|Variable   | Mean  | Median | Min  |  Max |
+|---|---|---|---|---|
+| Age  |  25.51 | 2.83  | 17  | 55  |
+| Attitude  | 31.43  |  32 |  14 | 50  |
+| Deep  | 3.68   | 3.18  | 1.58  | 4.91  |
+| Strategy  | 3.12  | 3.18  | 1.25  | 5.00  |
+| Surface  |  2.78 |2.83   |1.58   |4.33   |
+| Points  |22.72   |23.00   |7.00   |33.00   |
+
+###Regression
+I first carried out an exploratory analysis to find out which variables correlate best with points:
+
+<img src="data\Imagese2\pairsplot.png" alt="drawing" width="900"/>
+
+Attitude, strategy and surface had the strongest corellation and therefore were chosen as the predictor variables
+
+I ran a multiple linear regression model and got following results
+
+<img src="data\Imagese2\modelsummary1.png" alt="drawing" width="500"/>
+
+According to the results, attitude is the only variable that has  significant linear relationship with points (p < 0.001). Each 1 point increase in attitude results in an increase of 0.34 in points.
+
+Non-significant variables were removed and model was fitted again. 
+
+
+<img src="data\Imagese2\modelsummary2.png" alt="drawing" width="500"/>
+
+<img src="data\Imagese2\scatterplot.png" alt="drawing" width="700"/>
+
+According to the final model, attitude has still a significant linear relationship with points, and each 1 point increase in attitude results in an increase of 0.35 in points. Multiple R-squared value is 0.19 which means that attitude explains 19 percent of variance in points.
+
+Assumptions of the multiple linear model are that the
+
+Errors are normally distributed
+Errors are not correlated
+Errors have constant variance
+The size of a given error does ot depend oin the explanatory variables
+
+Diagnostic plots were created to check these assumptions
+
+<img src="data\Imagese2\miscplot1.png" alt="drawing" width="700"/>
+
+QQ-plot demostrates that the errors of the model are normally distributed, there are howeevr values at extremities that deviate from the normal line. 
+
+The scatterplot of residuals vs the fitted values shows no pattern, i.e. the spread remains largely similar with the increase in fitted value. Howeverthere are some residuals that are far form the fitted line. These could potentially be  outliers
+
+The residuals vs leverage plot shows that none of the eobservations have an unusually high impact on the results.

@@ -2,7 +2,8 @@
 #8.11.2019
 #Chapter 2 excercise: Regression and model validation
 
-lrn14 <- read.table("https://www.mv.helsinki.fi/home/kvehkala/JYTmooc/JYTOPKYS3-data.txt", sep="\t", header=TRUE)
+
+lrn2014 <- read.table("https://www.mv.helsinki.fi/home/kvehkala/JYTmooc/JYTOPKYS3-data.txt", sep="\t", header=TRUE)
 str(lrn14)
 dim(lrn14)
 
