@@ -1,4 +1,9 @@
-# RStudio Exercise 2: Tasks and Instructions
+# RStudio Exercise 2: Regression and model validation
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -15,12 +20,14 @@ Oridinal dataset had 183 observations for 60 variables. Variables with prefix A 
 
 ###Data wrangling
 
-The had multiple variables and I was supposed to merge assist B components into three major variables (Deep, Surface, Strategy). I also renamed three other variables (Age Attitude, Points -> age, attitude, points). Then I had to exclude other variables after selecting only 7 variables. The resulting dataset I saved as lrn2014.csv which has **7 variables** and **166 observations** for each variable.
+The dataset had multiple variables and I was supposed to merge assist B components into three major variables (Deep, Surface, Strategy). I also renamed three other variables (Age Attitude, Points -> age, attitude, points). Then I had to exclude other variables after selecting only 7 variables. The resulting dataset I saved as lrn2014.csv which has **7 variables** and **166 observations** for each variable.
+
 
 ###Data distribution
 Gender distribution was uneven, there were 110 female and 56 male subjects.
 
 **Distributions of each variable (except gender) are given below:**
+
 
 <img src="data\Imagese2\histage.png" alt="drawing" width="200"/>
 <img src="data\Imagese2\histattitude.png" alt="drawing" width="200"/>

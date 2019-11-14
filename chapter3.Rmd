@@ -1,0 +1,266 @@
+---
+title: "chapter3"
+output: html_document
+---
+
+# RStudio Exercise 3: Logistic regression
+
+The current dataset is called "Student Performance Data Set" and can be downloaded from <https://archive.ics.uci.edu/ml/datasets/Student+Performance>. Data compares student performance in two subjects: Portuguese and Mathematics.G1 referes to grades received during the first period and similary G2 and G3 correspond to grades received in second and third periods.
+
+
+```{r echo = T, results = 'hide', message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+library(boot)
+```
+
+After data wrangling the dataset was saved as alc.csv which contains 35 variable and 182 observations
+```{r}
+
+alc <- read.table("data/alc.csv", sep=",", header=TRUE, check.names=FALSE, row.names = 1)
+colnames(alc)
+dim(alc)
+```
+#### Hypotheses
+
+I would be interested in examining the relationship between alcohol use and:
+
+1. Parental cohabitation: I think that tense family relationships can lead to a higher stress in  teenagers and therfore a tendency towards more consumption of alcohol.
+
+2. Mother's education: Research shows that higher education for women results in multipe positive outcomes for family and society. This could also reflect in the attitudes of children.
+
+3. Romantic relationships: Failure to bond during teenage years and peer pressure to be in a relationship can result in higher tendency to drink.
+
+4. Current health status: It might be a causal factor for drinking but also vice versa i.e. excessive drinking could be related to bad health status.
+
+#### Distribution of variables
+
+Parental cohabitation and romantic relationship are binomial variables. Mother's eductation and health are categporical, ordinal variables. The bar charts showing their distributions are presented below. 
+
+The charts show the distribution of subects based on their relationship status, parental cohabitation and usage of alcohol.
+
+```{r}
+selcols <- c("Pstatus","Medu","romantic","health")
+selcollabs <- c("Parental status (together?)","Mother's education","Romantic Relationships","Health Status")
+a=0
+
+selvars <- select(alc, one_of(selcols))
+
+
+for (var in selvars) {
+  a = a +1
+  p <-ggplot(alc, aes(var, ..count..)) + geom_bar(aes(fill = high_use)) + xlab(selcollabs[a]) + ylab("Number of students with high alcohol use")
+  print(p)
+ 
+}
+
+alc %>% group_by(Pstatus, high_use) %>% summarise(count = n())
+
+alc %>% group_by(romantic, high_use) %>% summarise(count = n())
+
+```
+
+#### Logistic regression 
+
+None of the chosen variables are significantly associated with high alchohol use. The variables and their resulting odds ratios for high alcohol use are presented along with the confidence intervals. 
+ Odds ratios along with confidence intervals for association of each variable with high alcohol use are also presented,
+
+```{r}
+alc$Medu <- as.factor(alc$Medu)
+alc$health <- as.factor(alc$health)
+
+logreg <- glm(high_use ~ Pstatus + Medu + romantic + health, data = alc, family = "binomial")
+
+summary(logreg)
+
+
+OR <- coef(logreg) %>% exp
+
+CI <- confint(logreg) %>% exp
+
+cbind(OR, CI)
+```
+#### Choosing alternative variables
+
+
+I chose study time, activities and going out with friends. Distributions of these variables are presented through bar charts.
+
+
+
+
+```{r}
+
+altcols <- c("sex","age","famsize","Fedu","failures","studytime","activities","goout") 
+altcollabs <- c("sex","age","famsize","Fedu","failures","studytime","activities","goout") 
+altvars <-select(alc, one_of(altcols))
+a=0
+for (var in altvars) {
+  a = a +1
+  p <-ggplot(alc, aes(var, ..count..)) + geom_bar(aes(fill = high_use)) + xlab(altcollabs[a]) + ylab("Number of students with high alcohol use")
+  print(p)
+  
+}
+```
+
+Based on the distributions I chose to explore gender, study time, activities and going out. Gender and going out were significantly associated with high alcohol use. Study time also had a significant but weak association.
+
+Males were more likely to drink heavily (OR 2.24 CI95% 1.32 - 3.84). Compared to the reference group, students who went out most frequently were more likely to consume alcohol heavily (OR 10.73 CI 95% 3.036 - 51.42)
+
+```{r finding proper model}
+alc$studytime <- as.factor(alc$studytime)
+alc$goout <- as.factor(alc$goout)
+
+logreg2 <- glm(high_use ~ sex + studytime + activities + goout, data = alc, family = "binomial")
+
+summary(logreg2)
+
+OR <- coef(logreg2) %>% exp
+
+CI <- confint(logreg2) %>% exp
+
+cbind(OR, CI)
+```
+
+### Predictions using the model
+
+Previously significant variables (sex, studying time, going out) were chosen for this model. The chart represents the high/non "high users" that were  users that were classified correctly by the model as high users that were classified correctly or incorrectly. The tabulated chart shows the proportion of subjects classified correctly and incorrectly by the model.
+
+```{r suign model to make predictions}
+
+model <- glm(high_use ~ sex + studytime + goout, data = alc, family = "binomial")
+probabilities <- predict(model, type = "response")
+alc<- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = probability > 0.5)
+
+g <- ggplot(alc, aes(x = probability , y = high_use, col = prediction))
+g + geom_point()
+
+
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table %>% addmargins()
+
+
+```
+Loss function of the training model was:
+
+```{r loss function}
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+loss_func(class = alc$high_use, prob = alc$probability)
+```
+If a simple guessing strategy would be employed, there would be a 50 percent change of getting a correct answer since the outcome is a binomial outcome. The model however is more efffective as it gives a correct result 80 percent of the time, as demonstrated through the training set.
+
+### Bonus exercise
+
+```{r cross validation}
+
+
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = model, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+
+```
+
+The 10 fold cross validation test resulted in a 0.22 error for my model, which is less than 0.26 for the model introduced in DataCamp.
+
+### Super bonus
+
+Let us fit all the variables into a logistic regression model. 
+```{r}
+colnames(alc)
+alc$Mjob <- as.factor(alc$Mjob)
+alc$Fedu <- as.factor(alc$Fedu)
+alc$Fjob <- as.factor(alc$Fjob)
+alc$reason <- as.factor(alc$reason)
+alc$guardian <- as.factor(alc$guardian)
+alc$traveltime <- as.factor(alc$traveltime)
+alc$famrel <- as.factor(alc$famrel)
+alc$freetime <- as.factor(alc$freetime)
+
+model1 <- glm(high_use ~ school + sex + studytime + goout + Pstatus + Medu + Fedu + Mjob + Fjob + reason + nursery + internet + guardian + traveltime +studytime + failures + schoolsup + famsup + paid + activities + higher + romantic + famrel + freetime +goout + health + absences , data = alc, family = "binomial")
+
+summary(model1)
+probabilities <- predict(model1, type = "response")
+alc<- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = probability > 0.5)
+
+lf1 <-loss_func(class = alc$high_use, prob = alc$probability)
+lf1
+
+cv1 <- cv.glm(data = alc, cost = loss_func, glmfit = model1, K = 10)
+cv1 <- cv1$delta[1]
+cv1
+``` 
+The training error of this model was 0.19 and the tesing error was 0.24 
+
+The significant variables were selected and another model was created. 
+
+
+```{r}
+model2 <- glm(high_use ~ sex + goout + reason + traveltime + absences , data = alc, family = "binomial")
+
+summary(model2)
+
+probabilities <- predict(model2, type = "response")
+alc<- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = probability > 0.5)
+
+lf2 <-loss_func(class = alc$high_use, prob = alc$probability)
+lf2
+
+cv2 <- cv.glm(data = alc, cost = loss_func, glmfit = model2, K = 10)
+cv2 <- cv2$delta[1]
+cv2
+``` 
+
+This model had a better performance on the testing set, i.e. testing error was 0.21. Finally I decided to remove reason (to choose school) and travel time variables (because they were weak predictors and the category other for reason variable was hard to determine).  
+
+```{r}
+
+model3 <- glm(high_use ~ sex + goout  + absences , data = alc, family = "binomial")
+
+summary(model3)
+
+probabilities <- predict(model3, type = "response")
+alc<- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = probability > 0.5)
+
+
+lf3 <- loss_func(class = alc$high_use, prob = alc$probability)
+lf3
+
+cv3 <- cv.glm(data = alc, cost = loss_func, glmfit = model3, K = 10)
+
+cv3 <- cv3$delta[1]
+
+cv3
+``` 
+
+Final model had 3 predictors and a testing set loss function of 0.21.
+
+
+```{r}
+
+trainerror <- data.frame(n_variables=c("27", "5", "3"),
+                training_error=c(lf1, lf2, lf3))
+head(trainerror)
+
+testerror <- data.frame(n_variables=c("27", "5", "3"),
+                testing_error=c(cv1, cv2, cv3))
+head(testerror)
+
+p<-ggplot(data=trainerror, aes(x=n_variables, y=training_error)) +
+  geom_bar(stat="identity") + coord_flip()
+p
+
+p<-ggplot(data=testerror, aes(x=n_variables, y=testing_error)) +
+  geom_bar(stat="identity") + coord_flip()
+p
+
+```
