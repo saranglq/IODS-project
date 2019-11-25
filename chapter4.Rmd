@@ -1,0 +1,299 @@
+---
+title: "Chapter4"
+output: html_document
+---
+
+# RStudio Exercise 4: Clustering and classification
+
+
+
+```{r echo = T, results = 'hide', message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+library(boot)
+library(MASS)
+library(corrplot)
+library(tidyverse)
+library(plotly)
+```
+
+Now we shall load the dataset Boston from MASS package and explore it.
+
+```{r echo = TRUE}
+data("Boston")
+str(Boston)
+summary(Boston)
+dim(Boston)
+
+```
+
+The data has 14 variables and 506 measurements. Each measurement corresponds to a suburb of Boston i.e. 506 suburbs in total for this dataset. The variables are described in detail at https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html
+
+### Overview of data
+
+Data contains 12 numeric variables and 2 integer variables. 
+
+The variables are
+<ol> 
+<li></li> *Crime per capita:* Left skewed. 
+<li></li> *Proportion of res zone with lots of over 25000 sq. ft.:* Left skewed
+<li></li> *Proportion of industrial zones:* Left skewed with peak at 20%
+<li></li> *Bordering Charles river:* About 40 towns
+<li></li> *NO concentration:* Left skewed, from 0.4 to 0.9 PP10M
+<li></li> *Avg. number of rooms per dwelling:* Normally distributed with peak at 6 to 7
+<li></li> *Proportion of owner-occupied units built prior to 1940:* Right skewed. 
+<li></li> *Mean of distances to 5 Boston employment centres:* Left skewed. Range form 1 to 12.5 (km? miles?). 
+<li></li> *Index of accessibility to highways:* Range 1 to 24. Uneven, u-shaped distribution. 
+<li></li> *Property tax rate per $10,000:* Uneven distribution. 
+<li></li> *Pupil to teacher ratio:* 12 to 23, right skewed.
+<li></li> *Proportion (modified) of Black people by town:* Right skewed. Range 0.32 - 396.9. 
+<li></li> *Lower status of population (in %):* Right skewed, peak at 5%.
+<li></li> *Median value of homes (owner occupied) in $1000s:* Normally distributed, peak at 20. 
+</ol>
+```{r echo = TRUE}
+
+varlabels = c("per capita crime rate","proportion of residential land zoned","proportion of industrial zones per town","towns bordering charles river N/Y","NO concentration, PP10M","average number of rooms per dwelling","proportion of units built pre-1940", "weighted means of distance to 5 Boston employment centres","index of accessibility to radial highways","property tax rate per $10,000","pupil to teacher ratio", "Proortion of blacks by town","lower status of population","median value of homes in $1000s")
+
+
+selcols <- colnames(Boston)
+selvars <- dplyr::select(Boston, one_of(selcols))
+a=0
+
+for(var in selvars) {
+   
+  if(is.integer(var)){
+    a = a +1
+    plot <-ggplot(Boston, aes(var, ..count..)) + geom_bar() + xlab(varlabels[a]) + ylab("Number of suburbs")
+  print(plot)
+
+} else { 
+    a = a +1
+    plot <- qplot(var,
+      geom="histogram",
+      binwidth = ((1/7.9) * sd(var)) * 3.49,  
+      main = paste("Histogram for", varlabels[a])  ,  
+      xlab = (varlabels[a]),  
+      fill=I("blue"), 
+      col=I("red"), 
+      alpha=I(.2))
+    print(plot)
+    }
+}
+
+
+```
+
+```{r echo = TRUE}
+cor_matrix<-cor(Boston) 
+
+corrplot(cor_matrix, method="circle", type="upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+
+```
+
+The correlation matrix shows that the strongest positive correlations are between 1. Accessibility to highways and property tax rate, 2. Industrialization and NO concentration and 3. Number of rooms per dwelling and median value of homes. The strongest negative corellations are between 1. Proportion of buildings built prior to 1940 and distances to employment centres, 2. NO concentration and proportion of buildings built prior to 1940, 3. Proportion of industrial zones and distances to employment centres and 4 Percent lower status of population and median value of owner occupied homes.
+
+Already many patterns can be drawn from this data. Accessibility to highways means higher development and could mean higher property tax rates. More industrial zones can explain higher NO concentrations. Number of rooms per dwelling could explain the median value of homes as larger homes are more expensive. Negative relationship between percent of lower status population and median value of homes shows that richer 0suburbs have wealthier people. 
+
+
+
+### Standardizing the data
+
+
+```{r echo = TRUE}
+boston_scaled <- scale(Boston)
+
+summary(boston_scaled)
+
+boston_scaled <- as.data.frame(boston_scaled)
+
+bins <- quantile(boston_scaled$crim)
+
+label <- c("low", "med_low", "med_high", "high")
+
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = label)
+
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+boston_scaled <- data.frame(boston_scaled, crime)
+
+```
+
+After standardizing the data, the mean of all variables has been centered towards the zero and the range has decreased, but still maintaining similar proportions between them.
+
+Now we shall split the data into train and test set.
+
+```{r echo = TRUE}
+
+n <- nrow(boston_scaled)
+
+ind <- sample(n,  size = n * 0.8)
+
+train <- boston_scaled[ind,]
+
+test <- boston_scaled[-ind,]
+
+dim(train)
+
+dim(test)
+```
+
+### Linear discriminant analysis
+
+Drawing the LDA bi-plot. Categorical crime rate variable was used as the target and all other variables were used as predictors. 
+
+```{r echo = TRUE}
+
+lda.fit <- lda(crime ~ ., data = train)
+
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+classes <- as.numeric(train$crime)
+
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+
+lda.arrows(lda.fit, myscale = 3)
+
+```
+
+### Testing the model on test dataset
+
+```{r echo = TRUE}
+
+correct_classes <- test$crime
+
+test <- dplyr::select(test, -crime)
+
+lda.pred <- predict(lda.fit, newdata = test)
+
+table(correct = correct_classes, predicted = lda.pred$class) %>% addmargins()
+
+```
+
+When testing the trained model on test dataset, the model predicted correctly 9 out of 23 low crime, 15 out of 26 med_low crime, 15 out of 23 med_high crime and 30 out of 30 high crime suburbs. 
+
+
+### K-means clustering
+
+```{r echo = TRUE}
+data('Boston')
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+summary(boston_scaled)
+
+dist_eu <- dist(boston_scaled, method = "euclidean")
+summary(dist_eu)
+
+km <-kmeans(boston_scaled, centers = 3)
+
+pairs(boston_scaled[6:10], col = km$cluster)
+```
+
+
+Checking the optimum number of clusters and re-analyzing
+
+```{r echo = TRUE}
+
+set.seed(123)
+
+k_max <- 10
+
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled, k)$tot.withinss})
+
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+km <-kmeans(boston_scaled, centers = 4)
+
+pairs(boston_scaled[6:10], col = km$cluster)
+
+
+```
+I could not find a clear drop in WCSS after two so I set the number of clusters at 3. 
+
+If we draw a pairs plot, we can see that we cannot separate the neighborhoods based on two variables. Some variables are good at separating 2 clusters, but almost no combination of two variables can separate three clusters in a good way. 
+
+### Bonus
+So why don't we try separating the clusters based on LDA instead of pairs?
+I chose 4 clusters for this purpose because it gives a good speeration of data.
+
+```{r echo = TRUE}
+data('Boston')
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+
+set.seed(123)
+
+km <- kmeans(boston_scaled, centers = 4)
+
+lda.fit <- lda(km$cluster~ ., data = boston_scaled)
+
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+classes <- as.numeric(km$cluster)
+
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 7)
+
+```
+
+According to the results from the LDA plot, proportion of black people in town, nitric oxide concentrations, industrialization, tax rate and crime rate were the biggest factors separating suburbs into four categories. 
+
+Higher crime rate clustered the suburbs in cluster one. Lesser (or Higher? unclear from the variable description and formula) proportion of black people clustered the towns in the opposite direction. NO concentration, industrialization and tax rate clustered suburbs towards left, i.e. clusters 1 and 2.It can also be seen that these zones were more accessible to radial highways.
+
+### superbonus
+We predicted crime rate category using other variables and plotted it in 3D!
+
+The individual points were colored in the first graph according to the crime rate category and in the second graph using k means clustering (data was clustered into 4 groups in order to match with four categories of crime rate).
+
+Even though in the second 3D graph the data was clustered using all available data and not specifically to predict crime, note that it still does a pretty good job in separating suburbs into four groups according to crime rate. 
+
+```{r echo = TRUE}
+#PLOTTING 3D GRAPH FOR TRAIN SET WITH CRIME
+
+data('Boston')
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+train <- boston_scaled[ind,]
+
+km <- kmeans(train, centers = 4)
+
+bins <- quantile(train$crim)
+label <- c("low", "med_low", "med_high", "high")
+crime <- cut(train$crim, breaks = bins, include.lowest = TRUE, label = label)
+train <- data.frame(train, crime)
+
+lda.fit <- lda(crime ~ ., data = train)
+
+classes <- as.numeric(train$crime)
+
+model_predictors <- dplyr::select(train, -crime)
+
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = train$crime)
+
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = km$cluster)
+
+```
+
