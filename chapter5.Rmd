@@ -1,0 +1,258 @@
+---
+title: "chapter5"
+output: html_document
+---
+
+
+Loading the required libraries
+
+```{r echo = T, results = 'hide', message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+library(boot)
+library(MASS)
+library(corrplot)
+library(tidyverse)
+library(plotly)
+library(stringr)
+library(FactoMineR)
+```
+
+### Data wrangling
+
+Loading human.csv data and carrying out the required data wrangling.
+
+```{r}
+human <- read.table("data/human.csv", sep=",", header=TRUE, check.names=FALSE, row.names = 1)
+str(human)
+dim(human)
+
+```
+
+
+The variables have been derived from two datasets. First is the data used to create Human Devlopment Index (HDI). HDI was developed by the UNDP. The Gender Inequality Index is also devloped by the UNDP. According to the UNDP website, It measures gender inequalities in three important aspects of human development—reproductive health, measured by maternal mortality ratio and adolescent birth rates; empowerment, measured by proportion of parliamentary seats occupied by females; and economic status, expressed as labour market participation. The variables we will be using from these dataset are:
+
+**country**: The country being described
+**hdirank**: HDI rank, which tells what is the rank of the country in terms of Human development index
+**hdi**: The Human Devleopment Index score
+**lifeexp**: Life expectancy at birth
+**eduexp**: Expected years of schooling
+**meanedu**: Mean years of schooling
+**gni**: gross national income per capita
+**gniminusrank**: Gross national income per capita rank minus HDI rank
+**giirank**: Gender Inequality Index rank
+**gii**: The Gender Inequality Index score
+**matmor**: Maternal mortality ratio
+**adobir**: Adolescent birth rate
+**fparli**: Percent representation of women in parliament
+**secedf**: Percent population (women) with secondary education
+**secedm**: Percent population (men) with secondary education
+**labf**: Percent participation (of women) in labor force
+**labm**: Percent participation (of men) in labor force
+
+Using the above variables, following additional variables were created
+
+**secedfm**: Ratio between % women and % men with secondary education
+**labfm**: Ratio between % women and % men in labor force
+
+Now let's make the changes as instructed in the exercise 5, data wrangling part
+
+```{r}
+func <- str_replace(human$gni, pattern=",", replace ="")  %>% as.numeric
+
+human <- mutate(human, gni = func)
+
+selcols <- c("country","secedfm","labfm","eduexp","lifeexp","gni","matmor","adobir","fparli")
+human <- dplyr::select(human, one_of(selcols))
+
+comp <- complete.cases(human)
+data.frame(human[-1], comp = comp)
+human <- filter(human, comp == TRUE)
+
+last <- nrow(human) - 7
+human <- human[1:last, ]
+
+rownames(human) <- human$country
+human <- select(human, -country)
+
+write.csv(human, file = "data/human2.csv")
+
+dim(human)
+
+```
+### Summarizing the variables
+
+Following is the summary of the current variables in the human data.
+
+```{r}
+summary(human)
+
+```
+
+Now let's visualize these variables. 
+
+```{r echo = TRUE}
+
+varlabels = c("female to male secondary educ. ratio","female to male labor force ratio","expected years of schooling","life expectancy at birth","gross national income","maternal mortality","adolescent birth rate","percentage of women in parliament","","")
+
+
+selcols <- colnames(human)
+selvars <- dplyr::select(human, one_of(selcols))
+a=0
+typeof(human)
+for(var in selvars) {
+   
+ # if(is.numeric(var)){
+  #  a = a +1
+ #   plot <-ggplot(human, aes(var, ..count..)) + geom_bar() + xlab(varlabels[a]) + ylab("")
+#  print(plot)
+
+#} else { 
+    a = a +1
+    plot <- qplot(var,
+      geom="histogram",
+      binwidth = ((1/5.4) * sd(var)) * 3.49,  
+      main = paste("Histogram for", varlabels[a])  ,  
+      xlab = (varlabels[a]),
+      ylab = ("Number of countries"),
+      fill=I("blue"), 
+      col=I("red"), 
+      alpha=I(.2))
+    print(plot)
+ #   }
+}
+
+
+```
+We can see that in most cases, cpuntries had a lower proportion of wpomenn with secondary education when compared with men. However there were instances where higher proportion of women had secondary educaiton compared to men. Upon closer inspection, it was Gabon, Myanmar, Guyana. In most countries there were about 20 to 30 percent less women than men in the labor force. 13 to 15 years of schooling was common in most countries. Life expectancy at birth in most countries was about 75 years. GNI per capita was left skewed.Maternal mortality was also left skewed but very high in some countries, for example upto 1100 maternal deaths per 100,000 live births in  Sierra Leone. Percentage of women variable was normally ditributed with a peak at 20 percent. 
+
+Let's check the corellations between these variables.
+
+```{r echo = TRUE}
+
+cor_matrix<-cor(human) 
+
+corrplot(cor_matrix, method="circle", type="upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+
+``` 
+Strong negative associations were between 1. maternal mortality and life expectancy at birth 2. exposure to education and maternal mortality 3. Adolescent borth rate and life expectancy. Strong positive corellations were between 1. Adolescent borth rate and maternal mortality 2. Exposure to education and life expectancy. 
+
+### Principal componenet analysis
+
+```{r echo = TRUE}
+pca_human <- prcomp(human)
+s <- summary(pca_human)
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+pca_pr
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+
+``` 
+### Principal componenet analysis (after standardization)
+
+```{r echo = TRUE}
+human_std <- scale(human)
+pca_human <- prcomp(human_std)
+s <- summary(pca_human)
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+pca_pr
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+biplot(pca_human, cex = c(0.5, 1), cex.axis = 0.7, col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2], main = "PCA biplot ", cex.sub = 0.8, sub = "after standardizing the variables, GNI is no more the strongest contributing variable in the PCA anlysis. This is because the scaling makes it comparable in size to other variables.")
+?biplot
+
+``` 
+
+The results are very different after standardization because standardization changes the scale of the data. Before, one variable (i.e. GNI) had a lot of variability and it was being given the highest weight because of that. PC1 was based entirely on variability within gni. After standardization, other variables could also influence the results. 
+
+### Interpretation
+
+According to my interpretation, PCA is the strongest principal component (i.e. catches the highest amount of variability, 53%). It is influenced by maternal mortality, adolescent birth rate in one direction and education exposure, life expectancy, secondary education ratio between men and women, and gni in the other direction.
+
+The second pricipal component captures 16 percent variability in the data. It is influenced by number of women in the parliament and the participation of women in labor force. 
+
+### Tea dataset
+
+```{r echo = TRUE}
+data("tea")
+str(tea)
+dim(tea)
+
+``` 
+
+The tea dataset is a part of factominer package and contains information about tea drinking preferences of 300 individuals. 
+
+Following is a distribution of participants according to their age and gender. 
+```{r echo = TRUE}
+
+  age <- tea$age
+      plot <- qplot(age,
+      geom="histogram",
+      binwidth = ((1/6.69) * sd(var)) * 3.49,  
+      main = paste("Age and sex distribution of participants")  ,  
+      xlab = ("Age"),  
+      fill=tea$sex, 
+      col=I("red"), 
+      alpha=I(.2)) + scale_fill_discrete(name = "Gender") 
+    print(plot) 
+
+``` 
+The following graphs describe the characteristics of the individuals in terms of key varaibale groups. First we explore the time preference for cosuming tea, i.e. lunch, evenign or dinner. IN the second group we explore the location where they consume tea usually and from where they purchase it. In the third group we explore how the tea is consumed. 
+
+```{r echo = TRUE}
+selcols <- c("evening", "dinner", "lunch")
+group1 <-select(tea, one_of(selcols))
+gather(group1) %>% ggplot(aes(value)) + geom_bar() + facet_wrap("key", scales = "free") + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+selcols <- c("home", "pub", "work", "tearoom", "where")
+group2 <-select(tea, one_of(selcols))
+gather(group2) %>% ggplot(aes(value)) + geom_bar() + facet_wrap("key", scales = "free") + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+selcols <- c("How", "sugar", "how")
+group2 <-select(tea, one_of(selcols))
+gather(group2) %>% ggplot(aes(value)) + geom_bar() + facet_wrap("key", scales = "free") + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+
+``` 
+
+### Multiple correspondence analysis
+
+I chose certain groups for the purpose of analyses. 
+
+```{r echo = TRUE}
+#c("Tea" ,"evening", "dinner", "lunch", "sugar", "where", "home", "pub", "work", "tearoom" , "how","How", "sugar")
+
+grp1 <- c("Tea" ,"evening", "dinner", "lunch")
+grp2 <- c("Tea", "sugar", "how")
+grp <- c()
+
+a=0
+
+for (num in 1:2) {
+a=a+1
+
+curgrp <- get(paste('grp',a, sep = ''))
+curgrp
+tea_mca <- select(tea, one_of(curgrp))
+
+#gather(tea_mca) %>% ggplot(aes(value)) + geom_bar() + facet_wrap("key", scales = "free") + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+mca <- MCA(tea_mca, graph = FALSE)
+
+p <- plot(mca, invisible=c("ind"), habillage = "quali")
+print(p)
+
+}
+
+
+  
+```
+
+
+1. I first wanted to investigate is the time of consuming tea is related to the type of tea consumed. I found that green tea is usually consumed for dinner. Earl grey and black are usually not consumed for dinner. People were most likely to not consume tea with lunch. 
+
+2. In the second group of variables, I found that Earl Greay is usually consumed in tea bag for and with sugar. Green tea is bought both packaged and unpackaged and black tea is mostly bought unpackaged  Sygar is susually not added to green or black tea. 
+

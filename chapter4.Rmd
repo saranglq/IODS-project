@@ -30,6 +30,8 @@ dim(Boston)
 
 ```
 
+
+
 The data has 14 variables and 506 measurements. Each measurement corresponds to a suburb of Boston i.e. 506 suburbs in total for this dataset. The variables are described in detail at https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html
 
 ### Overview of data
@@ -188,10 +190,9 @@ When testing the trained model on test dataset, the model predicted correctly 9 
 data('Boston')
 boston_scaled <- scale(Boston)
 boston_scaled <- as.data.frame(boston_scaled)
-summary(boston_scaled)
 
-dist_eu <- dist(boston_scaled, method = "euclidean")
-summary(dist_eu)
+dist_eu <- dist(Boston, method = "euclidean")
+dist_man <- dist(Boston, method = 'manhattan')
 
 km <-kmeans(boston_scaled, centers = 3)
 
