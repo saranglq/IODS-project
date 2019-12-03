@@ -3,6 +3,8 @@ title: "chapter5"
 output: html_document
 ---
 
+# RStudio Exercise 5: Dimentionality reduction techniques
+
 
 Loading the required libraries
 
